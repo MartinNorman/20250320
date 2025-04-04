@@ -1,0 +1,274 @@
+///$tab Main
+SET ThousandSep=',';
+SET DecimalSep='.';
+SET MoneyThousandSep=',';
+SET MoneyDecimalSep='.';
+SET MoneyFormat='$ ###0.00;-$ ###0.00';
+SET TimeFormat='hh:mm:ss TT';
+SET DateFormat='YYYY-MM-DD';
+SET TimestampFormat='YYYY-MM-DD hh:mm:ss[.fff] TT';
+SET FirstWeekDay=6;
+SET BrokenWeeks=1;
+SET ReferenceDay=0;
+SET FirstMonthOfYear=1;
+SET CollationLocale='en-US';
+SET CreateSearchIndexOnReload=1;
+SET MonthNames='Jan;Feb;Mar;Apr;May;Jun;Jul;Aug;Sep;Oct;Nov;Dec';
+SET LongMonthNames='January;February;March;April;May;June;July;August;September;October;November;December';
+SET DayNames='Mon;Tue;Wed;Thu;Fri;Sat;Sun';
+SET LongDayNames='Monday;Tuesday;Wednesday;Thursday;Friday;Saturday;Sunday';
+SET NumericalAbbreviation='3:k;6:M;9:G;12:T;15:P;18:E;21:Z;24:Y;-3:m;-6:μ;-9:n;-12:p;-15:f;-18:a;-21:z;-24:y';
+
+
+
+
+
+
+
+
+
+
+
+
+///$tab YoY
+
+
+YoYFact:
+Load * Inline [
+	Date, SalesQuarter, Actual, Country, Product
+	2020-01-01, 24-Q1, 9, Sweden, A
+    2027-04-01, 24-Q2, 14, Sweden, A
+
+	2025-01-01, 25-Q1, 10, Sweden, B
+    2025-04-01, 25-Q2, 15, Sweden, B
+
+	2024-01-01, 24-Q1, 11, Denmark, A
+    2024-04-01, 24-Q2, 14, Denmark, B
+
+	2025-01-01, 25-Q1, 10, Denmark, B
+    2025-04-01, 25-Q2, 15, Denmark, A
+];
+
+
+Min_Max:
+Load
+	Min(Date) as MinDate,
+    Max(Date) as MaxDate
+Resident YoYFact
+;
+
+Let vMinDate = Peek('MinDate', -1, 'Min_Max');
+Let vMaxDate = Peek('MaxDate', -1, 'Min_Max');
+
+Drop Table Min_Max;
+
+Trace '$(vMinDate)';
+Trace '$(vMaxDate)';
+
+
+
+Calendar:
+Load * Inline [
+	Date
+];
+
+
+for i = '$(vMinDate)' to '$(vMaxDate)'
+
+	Concatenate(Calendar)
+	Load
+    	Date($(i)) as Date,
+        Year($(i)) as Year,
+        Year($(i)) &'Q'& Ceil(Month($(i))/3) as YearQuarter,
+        AutoNumber(Year($(i)) &'Q'& Ceil(Month($(i))/3)) as YearQuarterCounter
+	AutoGenerate 1
+    ;
+
+Next
+Exit Script
+///$tab Acc
+
+// AccFact:
+// Load * Inline [
+// 	SalesYearMonth, SalesQuarter, Actual, 
+// 	2024-01-01, 24-Q1, 9
+//     2024-02-01, 24-Q1, 7
+//     2024-03-01, 24-Q1, 11
+//     2024-04-01, 24-Q2, 14
+// 	2025-01-01, 25-Q1, 10
+//     2025-02-01, 25-Q1, 8
+//     2025-03-01, 25-Q1, 12
+//     2025-04-01, 25-Q2, 15
+// ];
+
+
+// AccFact2:
+// Load
+// 	SalesYearMonth, 
+//     SalesQuarter,
+//     Actual, 
+//     Target,
+// 	RangeSum(Peek(Accumulated_Actual), Actual) as Accumulated_Actual
+// Resident AccFact
+// Order By 
+// 	SalesYearMonth asc
+// ;
+// Drop Table AccFact;
+
+
+///$tab Cust report
+
+
+
+// Fact:
+// Load * Inline [
+// 	Customer, 	Customer Category, 	Sales, 	Forecast
+//     A, 			Car, 				10,
+//     B, 			Car, 				5,
+//     , 			Car,				,		8
+	
+// ];
+
+
+// Dim_Sales:
+// Load * Inline [
+// 	_DimensionNo, ParentDimension, $Dimension
+//     1001, Sales, Customer
+//     1002, Sales, Customer Category
+// ];
+
+// Exp_Sales:
+// Load * Inline [
+// 	_ExpressionNo,	$Expression,			ParentExpression,		Number Format,	Auto Number Format Graph
+//     2001, 			Sales, 					Sales,					# ##0,			Auto
+//     2002, 			Forecast, 				Sales,					# ##0,			Auto
+// ];
+
+
+// For each vReportType in 'Sales'
+
+// 	//Läser ut Alla DimensionsParents som separata dimensioner (För att göra det mer strukturerat i layout)
+// 	//*****************************************************************************************************
+
+// 	qualify *;
+// 	$AdHoc_DIM_$(vReportType):
+// 	Generic LOAD
+// 		_DimensionNo, 
+// 		ParentDimension as $ParentDimension,
+// 		$Dimension
+// 	Resident Dim_$(vReportType)
+// 	where 
+//     	len([_DimensionNo]) >0 
+//         and 
+//         not isnull([_DimensionNo])
+//     ;
+
+// 	Unqualify *;
+
+// 	//This table is used by Custom Report Builder to create table. The third row creats an expressions that is used in the JS code to create table using Qlik APIs. 
+// 	//The _DimensionNo is used to sort the columns in the table. If another sorting order is needed another field could be added to the excelfile and user for "CustomReportListOfColumnsNo"
+// 	CustomReportListOfColumns:
+// 		Load 
+// 		'$(vReportType)'		as CustomReportType,					
+// 		_DimensionNo			as CustomReportListOfColumnsNo ///
+// ///		'{"qLibraryId":"'&"Master Dimension ID"&'","qType":"dimension","qCalcCondition":{"qCond":{"qv":"='&chr(36)&'(fAdHocDim_'&'$(vReportType)'&'('&_DimensionNo&'))"}}}' as CustomReportListOfColumns
+// 	resident Dim_$(vReportType)
+// 	where 
+//     	len([_DimensionNo]) > 0 
+//         and 
+//         not isnull([_DimensionNo])
+//     ;
+
+// 	ParentDimensionIsland:
+// 	Load distinct 
+// 		'getselectedcount('&'[$AdHoc_DIM_'&'$(vReportType)'&'.'&ParentDimension&']'&')>0' as Concat_DimensionSelected,
+// 		'if(getselectedcount('&'[$AdHoc_DIM_'&'$(vReportType)'&'.'&ParentDimension&']'&')>0,'&'Concat('&'[$AdHoc_DIM_'&'$(vReportType)'&'.'&ParentDimension&'.$AdHoc_DIM_'&'$(vReportType)'&'._DimensionNo]'&','&chr(39)&'|'&chr(39)&')'&' )' as Concat_ParentDimension_Selection
+// 	resident Dim_$(vReportType)
+// 	where 
+//     	len([_DimensionNo]) > 0 
+//         and 
+//         not isnull([_DimensionNo])
+//     ;
+
+// 	Concat_ParentDimension_Selection_2:
+// 	load
+// 		Concat(Concat_DimensionSelected, ' or ') as Concat_DimensionSelected_2,
+// 		Concat(Concat_ParentDimension_Selection,'&'&chr(39)&'|'&chr(39)&'&') as Concat_ParentDimension_Selection_2
+// 	Resident ParentDimensionIsland
+//     ;
+
+// 	//Skapar upp dessa två variabler, vDimensionSelected, vDimensionSelection som dels räknar att val har gjorts och dels tar fram vilka val som gjorts
+// 	let vDimensionSelected_$(vReportType) = '='&peek('Concat_DimensionSelected_2',-1,Concat_ParentDimension_Selection_2);
+// 	let vDimensionSelection_$(vReportType) = '='&peek('Concat_ParentDimension_Selection_2',-1,Concat_ParentDimension_Selection_2);
+// 	//fAdHocDim används för att sätta conditional show på dimensioner.
+// 	let fAdHocDim_$(vReportType) = 'SubStringCount('&chr(39)&'|'&chr(39)&'&vDimensionSelection_$(vReportType)&'&chr(39)&'|'&chr(39)&', '&chr(39)&'|$1|'&chr(39)&')';
+
+// ///	drop table Concat_ParentDimension_Selection_2;
+// ///	Drop Table ParentDimensionIsland;
+
+// 	//Läser ut Alla ExpressionParents som separata dimensioner (För att göra det mer strukturerat i layout)
+// 	//*****************************************************************************************************
+
+// 	qualify *;
+    
+// 	$AdHoc_Expression_$(vReportType):
+// 	generic LOAD
+// 		_ExpressionNo,
+// 		ParentExpression as $ParentExpression,
+// 		$Expression
+// 	Resident Exp_$(vReportType)
+// 	where 
+//     	len([_ExpressionNo]) > 0 
+//         and 
+//         not isnull([_ExpressionNo])
+//     ;
+	
+//     Unqualify *;
+
+// 	//This table is used by Custom Report Builder to create table. The third row creats an expressions that is used in the JS code to create table using Qlik APIs. 
+// 	//The _DimensionNo is used to sort the columns in the table. If another sorting order is another field could be added to the excelfile and user for "CustomReportListOfColumnsNo"
+// 	CustomReportListOfColumns:
+// 	Load 
+// 		'$(vReportType)'		as CustomReportType,
+// 		_ExpressionNo			as CustomReportListOfColumnsNo
+// //		'{"qLibraryId":"'&"Master Measure ID"&'","qType":"measure","qCalcCondition":{ "qCond":{"qv":"='&chr(36)&'(fAdHocExp_'&'$(vReportType)'&'('&_ExpressionNo&'))"}},"qDef": { "qNumFormat": { "qType": "F", "qFmt": "'&"Number Format"&'", "qDec": "," , "qThou": " " }}}' as CustomReportListOfColumns
+// 	Resident Exp_$(vReportType)
+// 	where 
+//     	len([_ExpressionNo]) > 0 
+//         and 
+//         not isnull([_ExpressionNo])
+//     ;
+
+
+// 	ParentExpressionIsland:
+// 	Load distinct 
+// 		'getselectedcount('&'[$AdHoc_Expression_'&'$(vReportType)'&'.'&ParentExpression&']'&')>0' as Concat_ExpressionsSelected,
+// 		'if(getselectedcount('&'[$AdHoc_Expression_'&'$(vReportType)'&'.'&ParentExpression&']'&')>0,'&'Concat('&'[$AdHoc_Expression_'&'$(vReportType)'&'.'&ParentExpression&'.$AdHoc_Expression_'&'$(vReportType)'&'._ExpressionNo]'&','&chr(39)&'|'&chr(39)&')'&' )' as Concat_ParentExpression_Selection
+// 	Resident Exp_$(vReportType)
+// 	where 
+//      	len([_ExpressionNo]) > 0 
+//         and 
+//         not isnull([_ExpressionNo])
+//     ;
+
+
+// 	Concat_ParentExpression_Selection_2:
+// 	load
+// 		concat(Concat_ExpressionsSelected, ' or ') as Concat_ExpressionsSelected_2,
+// 		Concat(Concat_ParentExpression_Selection,'&'&chr(39)&'|'&chr(39)&'&') as Concat_ParentExpression_Selection_2
+// 	Resident ParentExpressionIsland
+//     ;
+	
+//     Drop table ParentExpressionIsland;
+
+// 	//Skapar upp dessa två variabler, vExpressionSelected, vExpressionSelection som dels räknar att val har gjorts och dels tar fram vilka val som gjorts
+// 	let vExpressionSelected_$(vReportType) = '='&peek('Concat_ExpressionsSelected_2',-1,Concat_ParentExpression_Selection_2);
+// 	let vExpressionSelection_$(vReportType) = '='&peek('Concat_ParentExpression_Selection_2',-1,Concat_ParentExpression_Selection_2);
+// 	//fAdHocDim används för att sätta conditional show på expressions.
+// 	let fAdHocExp_$(vReportType) = 'SubStringCount('&chr(39)&'|'&chr(39)&'&vExpressionSelection_$(vReportType)&'&chr(39)&'|'&chr(39)&', '&chr(39)&'|$1|'&chr(39)&')';
+
+// 	Drop Table Concat_ParentExpression_Selection_2;
+// // drop tables Exp_$(vReportType), Dim_$(vReportType);
+// next vReportType
+
+// // 
