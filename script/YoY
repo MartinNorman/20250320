@@ -19,7 +19,7 @@ SET DayNames='Mon;Tue;Wed;Thu;Fri;Sat;Sun';
 SET LongDayNames='Monday;Tuesday;Wednesday;Thursday;Friday;Saturday;Sunday';
 SET NumericalAbbreviation='3:k;6:M;9:G;12:T;15:P;18:E;21:Z;24:Y;-3:m;-6:μ;-9:n;-12:p;-15:f;-18:a;-21:z;-24:y';
 
-
+//Adding comment
 
 
 
@@ -31,7 +31,6 @@ SET NumericalAbbreviation='3:k;6:M;9:G;12:T;15:P;18:E;21:Z;24:Y;-3:m;-6:μ;-9:n;
 
 
 ///$tab YoY
-
 
 YoYFact:
 Load * Inline [
@@ -87,7 +86,6 @@ for i = '$(vMinDate)' to '$(vMaxDate)'
 Next
 Exit Script
 ///$tab Acc
-
 // AccFact:
 // Load * Inline [
 // 	SalesYearMonth, SalesQuarter, Actual, 
@@ -117,7 +115,6 @@ Exit Script
 
 
 ///$tab Cust report
-
 
 
 // Fact:
