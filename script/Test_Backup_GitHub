@@ -20,3 +20,21 @@ SET LongDayNames='Monday;Tuesday;Wednesday;Thursday;Friday;Saturday;Sunday';
 SET NumericalAbbreviation='3:k;6:M;9:G;12:T;15:P;18:E;21:Z;24:Y;-3:m;-6:μ;-9:n;-12:p;-15:f;-18:a;-21:z;-24:y';
 
 //2
+
+/*
+The way this works is that when an app is publised to a managed space (that we have decided to track) an automation is triggered.
+The automation takes a copy of the full app (puts it in the QVF folder) and also a copy of just the script (puts it in the script folder).
+This way we can use the full copy to restore it the app is lost in Qlik.
+But more commonly used will be the ability to see what has been changed in the script between versions.
+
+2 things to note.
+1 It is only when the app is published to a managed space that the automation is triggered.
+All of our current extract and transform app are not running from a managed space so they will not be covered as it is now.
+We can either try and adjust the automation to pick up changes in shared spaces or we could set up managed spaces for extract and transform.
+
+2 The automation is running as a specific user (right now my user). When it comes to sheets there are 3 types. 1 Public, 2 Community and 3 Personal.
+All public and community sheets will be included in the backup and all personal sheets of the user that is running the automation as well 
+(as it is right now, my personal sheets will be included). But if Max for example also have personal sheets in the app they will not be included.
+The way I see it, it is enough that public and community sheets are included.
+
+*/
