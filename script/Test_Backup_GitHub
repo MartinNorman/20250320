@@ -27,7 +27,7 @@ The automation takes a copy of the full app (puts it in the QVF folder) and also
 This way we can use the full copy to restore it the app is lost in Qlik.
 But more commonly used will be the ability to see what has been changed in the script between versions.
 
-2 things to note.
+3 things to note.
 1 It is only when the app is published to a managed space that the automation is triggered.
 All of our current extract and transform app are not running from a managed space so they will not be covered as it is now.
 We can either try and adjust the automation to pick up changes in shared spaces or we could set up managed spaces for extract and transform.
@@ -37,4 +37,6 @@ All public and community sheets will be included in the backup and all personal 
 (as it is right now, my personal sheets will be included). But if Max for example also have personal sheets in the app they will not be included.
 The way I see it, it is enough that public and community sheets are included.
 
+3 Ideally it should be possible to compare the new logic to current logic before the change is applied, 
+the way this is set up that is not possible unfortunately. You need to first publish the change and then it is possible to compare versions.
 */
